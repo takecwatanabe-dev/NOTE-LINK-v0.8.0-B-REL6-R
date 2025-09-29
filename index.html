@@ -2,16 +2,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NOTE LINK — v0.8.0 / B-REL6-R</title>
+<title>NOTE LINK — v0.8.0 / B-REL6-S</title>
 <!--
-PATCH HEADER: 2025-09-29 09:48 JST / VERSION HF6R
-CHANGES (from HF6Q):
-  - Fix inPaperXY(): correct Y upper bound to `paperRect.y + paperRect.h`.
-  - Implement Keyboard tool (text boxes): add-on click, bold/italic, delete text / delete box,
-    PNG export composite, save/load & history, rehydrate events after load.
-  - textLayer pointer-events enabled only while tool='keyboard' to avoid accidental touches.
-  - Keep: header rail drag threshold & click-suppression; center-stable zoom; no paper shift on toolbar toggle.
-NOTE: UI is unchanged (no new visible controls).
+PATCH HEADER: 2025-09-29 10:12 JST / VERSION HF6S
+CHANGES (from HF6R):
+  A) Toolbar toggle drift fix:
+     - Anchor-based compensation: measure paper-left (CSS px) before/after toggle and adjust panX by the exact on-screen delta.
+     - Do NOT re-apply saved handle X during toggle (prevents unexpected jumps). Only clamp current handle position.
+  B) Text loss fix:
+     - flushText() before history snapshot and before save/export.
+     - Stronger rehydrate after load/page-set; debounced auto-history on edit/blur remains.
+  (UI unchanged)
 -->
 <style>
 :root{
@@ -115,7 +116,7 @@ body.tb-collapsed .tb-handle{ display:grid }
 .note-text{position:absolute;min-width:64px;min-height:28px;padding:6px 8px;color:#111;background:transparent;
   outline:1px dashed #ffffff40;border-radius:6px;pointer-events:auto;
   -webkit-user-select:text; user-select:text; caret-color:auto}
-.note-text[contenteditable="true"]:focus{outline:2px solid var(--ok); background: #ffffffa8}
+.note-text[contenteditable="true"]:focus{outline:2px solid var(--ok); background:#ffffffa8}
 .note-text .del{position:absolute;right:-8px;top:-10px;font-size:11px;color:#fff;background:#0008;border:1px solid #fff3;border-radius:8px;padding:2px 6px;display:none}
 .note-text:focus-within .del{display:block}
 
@@ -130,7 +131,7 @@ body.tb-collapsed .tb-handle{ display:grid }
 </head>
 <body>
 <header class="topbar" id="topbar">
-  <div class="brand"><strong id="verText">NOTE LINK — V0.8.0 / B-REL6-R</strong></div>
+  <div class="brand"><strong id="verText">NOTE LINK — V0.8.0 / B-REL6-S</strong></div>
 
   <div class="rail-wrap" id="railWrap">
     <div class="rail-scroll" id="railScroll">
@@ -155,7 +156,7 @@ body.tb-collapsed .tb-handle{ display:grid }
         <button class="btn" id="btnNext">次 ▶︎</button>
       </span>
 
-      <span class="build" id="buildText">BUILD: HF6R</span>
+      <span class="build" id="buildText">BUILD: HF6S</span>
     </div>
     <div id="railHint" class="rail-hint" aria-hidden="true">⇠ スライド ⇢</div>
     <div class="rail-fade left"  aria-hidden="true"></div>
@@ -261,8 +262,8 @@ const cvPaper=$('#paper'), gPaper=cvPaper.getContext('2d');
 const cvGuide=$('#guide'), gGuide=cvGuide.getContext('2d');
 const cv=$('#paint'), ctx=cv.getContext('2d',{alpha:true});
 const textLayer=$('#textLayer');
-$('#verText').textContent='NOTE LINK — V0.8.0 / B-REL6-R';
-$('#buildText').textContent='BUILD: HF6R';
+$('#verText').textContent='NOTE LINK — V0.8.0 / B-REL6-S';
+$('#buildText').textContent='BUILD: HF6S';
 
 /* ===== layout & zoom ===== */
 let zoom=1, panX=0, panY=0, W=0, H=0;
@@ -300,7 +301,7 @@ function drawPaper(){
 
 /* ===== pages ===== */
 const Pages={ list:[{strokes:[],textsHTML:'',bg:null}], idx:0, cur(){ return this.list[this.idx]; } };
-function setPage(i){ i=Math.max(0, Math.min(Pages.list.length-1, i)); Pages.cur().textsHTML=textLayer.innerHTML; Pages.idx=i; textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); updatePageIndicator(); drawPaper(); redrawAll(); }
+function setPage(i){ flushText(); i=Math.max(0, Math.min(Pages.list.length-1, i)); Pages.idx=i; textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); updatePageIndicator(); drawPaper(); redrawAll(); }
 function updatePageIndicator(){ $('#pageIndicator').textContent=(Pages.idx+1)+'/'+Pages.list.length; $('#pageIndicator_m').textContent=(Pages.idx+1)+'/'+Pages.list.length; }
 $('#btnPrev').onclick=()=>setPage(Pages.idx-1); $('#btnNext').onclick=()=>setPage(Pages.idx+1);
 $('#btnPrev_m').onclick=()=>{ setPage(Pages.idx-1); toggleMore(false); };
@@ -332,7 +333,6 @@ function setActiveTool(t){
   saveToolState(tool); tool=t; loadToolState(t);
   $$('.tool').forEach(b=>b.classList.toggle('active', b.dataset.tool===t));
   $('#panelTool').textContent=t;
-  /* 表示条件：HF6j 準拠 */
   $('#rowAlpha').style.display=(t==='marker')?'':'none';
   $('#rowLineCap').style.display=(t==='marker'||t==='pen')?'':'none';
   $('#rowStraight').style.display=(t==='pen'||t==='marker')?'':'none';
@@ -342,7 +342,6 @@ function setActiveTool(t){
   textLayer.style.pointerEvents = (t==='keyboard') ? 'auto' : 'none';
   syncUI(); cv.style.cursor=(t==='hand')?'grab':(t==='keyboard')?'text':'crosshair';
 }
-/* ツール群クリック */
 $$('.tool').forEach(btn=>{
   if(btn.id==='btnSidebarToggle') return;
   btn.addEventListener('click', ()=>{
@@ -377,7 +376,7 @@ Object.values(ui).forEach(el=>el.addEventListener('input',onPanelChange));
 
 /* ===== pointer mapping & draw ===== */
 function pointerToCanvas(e){ const r=cv.getBoundingClientRect(); return { x:(e.clientX - r.left)*(cv.width/r.width), y:(e.clientY - r.top)*(cv.height/r.height) }; }
-function inPaperXY(x,y){ return x>=paperRect.x && y>=paperRect.y && x<=paperRect.x+paperRect.w && y<=paperRect.y+paperRect.h; } /* ← HF6R: fix Y upper bound */
+function inPaperXY(x,y){ return x>=paperRect.x && y>=paperRect.y && x<=paperRect.x+paperRect.w && y<=paperRect.y+paperRect.h; } /* HF6S: OK */
 let drawing=false, panning=false, start={x:0,y:0}, last={x:0,y:0}, activeTouches=0; let currentStroke=null;
 function setCtx(){ ctx.lineJoin='round'; ctx.lineCap=(tool==='marker'||tool==='pen')?cap:'round';
   if(tool==='eraser'){ ctx.globalCompositeOperation='destination-out'; ctx.strokeStyle='#000'; ctx.globalAlpha=1; }
@@ -476,7 +475,6 @@ function createTextBox(x,y,txt=''){
 textLayer.addEventListener('pointerdown',(e)=>{
   if(tool!=='keyboard') return;
   const p=layerPointFromClient(e);
-  // 既存枠をクリックしている場合は追加しない（capturingでboxが拾う）
   if(e.target.classList.contains('note-text') || e.target.closest('.note-text')) return;
   createTextBox(p.x, p.y, '');
 });
@@ -499,7 +497,7 @@ $('#btnTextDel').addEventListener('click',()=>{
   if(!activeText) return;
   const sel=window.getSelection();
   if(sel && sel.rangeCount>0 && activeText.contains(sel.anchorNode)){
-    document.execCommand && document.execCommand('delete'); // 互換用
+    document.execCommand && document.execCommand('delete');
     pushHistoryDebounced();
   }else{
     activeText.textContent=''; pushHistoryDebounced();
@@ -521,6 +519,9 @@ function rehydrateTextLayer(){
   });
 }
 
+/* ===== STATE SYNC ===== */
+function flushText(){ Pages.cur().textsHTML = textLayer.innerHTML || ''; }
+
 /* ===== output/save/load ===== */
 function composite(){ const out=document.createElement('canvas'); out.width=cv.width; out.height=cv.height; const o=out.getContext('2d');
   o.drawImage(cvPaper,0,0); o.drawImage(cv,0,0);
@@ -539,11 +540,12 @@ $('#btnPrint').onclick=()=>window.print();
 $('#btnShare').onclick=()=>{composite().toBlob(async b=>{const f=new File([b],'note.png',{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Note Link'})}catch(e){}}else{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='note-link.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),800)}})};
 
 let fileHandle=null;
-function exportJSON(){ return JSON.stringify({ v:'HF6r',
+function exportJSON(){ flushText(); return JSON.stringify({ v:'HF6s',
   pages: Pages.list.map(pg=>({strokes:pg.strokes||[],textsHTML:pg.textsHTML||'', bg:pg.bg && pg.bg.dataURL ? {dataURL:pg.bg.dataURL}:null})),
   idx: Pages.idx, grid:{on:gridOn,stepMM:gridStepMM,color:gridColor} }); }
-async function doSave(){ const blob=new Blob([exportJSON()],{type:'application/json'});
-  try{ if('showSaveFilePicker' in window){ if(!fileHandle){ fileHandle=await window.showSaveFilePicker({suggestedName:'note-link.json',types:[{description:'Note Link JSON',accept:{'application/json':['.json']}}]}); }
+async function doSave(){ try{
+    const blob=new Blob([exportJSON()],{type:'application/json'});
+    if('showSaveFilePicker' in window){ if(!fileHandle){ fileHandle=await window.showSaveFilePicker({suggestedName:'note-link.json',types:[{description:'Note Link JSON',accept:{'application/json':['.json']}}]}); }
       const w=await fileHandle.createWritable(); await w.write(blob); await w.close();
     }else{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='note-link.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),800); }
   }catch(e){} }
@@ -597,7 +599,7 @@ $('#btnImgInsert').onclick=()=>addImage('insert');
 
 /* ===== undo/redo ===== */
 const hist=[], redoStack=[];
-function snapshot(){ return {pages:JSON.parse(JSON.stringify(Pages.list.map(p=>({strokes:p.strokes,textsHTML:p.textsHTML,bg:p.bg?{dataURL:p.bg.dataURL}:null})))), idx:Pages.idx, grid:{on:gridOn,step:gridStepMM,color:gridColor}}; }
+function snapshot(){ flushText(); return {pages:JSON.parse(JSON.stringify(Pages.list.map(p=>({strokes:p.strokes,textsHTML:p.textsHTML,bg:p.bg?{dataURL:p.bg.dataURL}:null})))), idx:Pages.idx, grid:{on:gridOn,step:gridStepMM,color:gridColor}}; }
 function pushHistory(){ hist.push(snapshot()); if(hist.length>40) hist.shift(); redoStack.length=0; updatePageIndicator(); }
 let pushTimer=0;
 function pushHistoryDebounced(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushHistory, 250); }
@@ -618,7 +620,7 @@ $('#btnZoomIn').onclick = ()=>setZoom(zoom+0.1);
 $('#btnZoomOut').onclick= ()=>setZoom(zoom-0.1);
 $('#btnZoomReset').onclick=()=>setZoom(1);
 
-/* ===== Header rail: wheel/drag scroll（クリック殺し対策） ===== */
+/* ===== Header rail scroll ===== */
 const rail = document.getElementById('railScroll');
 rail.addEventListener('wheel',(e)=>{ const useY=Math.abs(e.deltaY)>=Math.abs(e.deltaX); const d=useY?e.deltaY:e.deltaX;
   if(d!==0){ rail.scrollLeft+=d; e.preventDefault(); } },{passive:false});
@@ -653,35 +655,32 @@ rail.addEventListener('pointerleave',railEnd,{passive:true});
   update(); maybe();
 })();
 
-/* ===== Collapsible toolbar + movable handle ===== */
+/* ===== Collapsible toolbar + movable handle (HF6S) ===== */
 const bodyEl=document.body, tbHandle=document.getElementById('tbHandle');
 function updateHandleIcon(){ const open=!isCollapsed(); tbHandle.innerHTML=open
-  ? '<svg viewBox="0 0 24 24"><path d="M5 15 L12 8 L19 15 Z"/></svg>'  /* ▲ */
-  : '<svg viewBox="0 0 24 24"><path d="M5 9 L12 16 L19 9 Z"/></svg>';  /* ▼ */ }
+  ? '<svg viewBox="0 0 24 24"><path d="M5 15 L12 8 L19 15 Z"/></svg>'
+  : '<svg viewBox="0 0 24 24"><path d="M5 9 L12 16 L19 9 Z"/></svg>'; }
 function isCollapsed(){ return bodyEl.classList.contains('tb-collapsed'); }
 function applyHandleX(px){ const x=clamp(px,4, Math.max(4,innerWidth-40)); tbHandle.style.left=x+'px'; }
 function savedHandleX(){ try{ const v=localStorage.getItem('tbHandleX'); return (v==null?8:parseInt(v,10)||8); }catch{ return 8; } }
 function saveHandleX(px){ try{ localStorage.setItem('tbHandleX', String(px)); }catch{} }
-function getToolbarW(){
-  const b=getComputedStyle(document.body).getPropertyValue('--toolbar-w').trim();
-  const r=getComputedStyle(document.documentElement).getPropertyValue('--toolbar-w').trim();
-  const v=b||r||'0'; return parseInt(v,10)||0;
-}
+function getPaperLeftCSS(){ const r=cv.getBoundingClientRect(); return r.left + (paperRect.x / DPR); } /* anchor */
+
+/* robust toggle that keeps the paper still on screen */
 function toggleToolbar(mode='auto'){
-  const preW = getToolbarW();
+  const preAnchor = getPaperLeftCSS();
   const willCollapse=(mode==='auto')?!isCollapsed():(mode==='collapse');
   if(willCollapse){ bodyEl.classList.add('tb-collapsed'); tbHandle.setAttribute('aria-expanded','false'); }
   else            { bodyEl.classList.remove('tb-collapsed'); tbHandle.setAttribute('aria-expanded','true'); }
-  const postW = getToolbarW();
-  const delta = preW - postW;
-  panX += delta;
-  updateViewportTransform();
+  applyBars(); fitCanvases();  /* reflow first */
+  const postAnchor = getPaperLeftCSS();
+  const deltaScreen = preAnchor - postAnchor; /* +: moved left; compensate to right */
+  panX += deltaScreen; updateViewportTransform();
   updateHandleIcon();
-  applyHandleX(savedHandleX());
-  applyBars(); fitCanvases();
+  clampHandle(); /* keep current handle pos; do not re-apply saved value here */
 }
 
-/* ハンドル：ドラッグ/TAP判定＋ドラッグ直後のclick抑止 */
+/* ハンドル：ドラッグ/TAP判定＋直後クリック抑止 */
 tbHandle.addEventListener('click', e=>{
   if(justDragged){ justDragged=false; return; }
   toggleToolbar('auto');
