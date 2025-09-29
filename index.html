@@ -2,13 +2,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NOTE LINK — v0.8.0 / B-REL6-S (1PAGE RS4)</title>
+<title>NOTE LINK — v0.8.S</title>
 <!--
-PATCH HEADER: 2025-09-29 JST / VERSION HF6S-1P-RS4
-BOOT SIZE POLICY:
-  - Mobile/Tablet (pointer:coarse or maxTouchPoints>0): ノートを画面いっぱい「横幅基準」でフィット（必要なら高さ側でクランプ）
-  - Desktop: 実寸(100%)で表示が収まるなら100%。狭い場合は横幅に合わせ（高さでクランプ）
-Other: RS3の動作は踏襲（近い端ドック/紙アンカー/レールドラッグ/影＆ヒント 等）
+PATCH HEADER: 2025-09-29 JST / VERSION HF6S-1P-RS5
 -->
 <style>
 :root{
@@ -22,8 +18,6 @@ html,body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
   -webkit-user-select:none;user-select:none;overflow-x:hidden;
 }
-
-/* ===== Topbar ===== */
 header.topbar{
   position:fixed;top:0;left:0;right:0;z-index:2000;height:var(--topbar-h);
   display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;color:#fff;
@@ -32,6 +26,7 @@ header.topbar{
   padding-top:env(safe-area-inset-top);
 }
 .topbar .brand{flex:0 0 auto;font-weight:800}
+@media (max-width: 480px){ .topbar .brand{display:none} }
 .topbar .rail-wrap{ position:relative; flex:1 1 auto; min-width:40px; }
 .topbar .rail-scroll{
   position:relative; flex:1 1 auto; min-width:40px;
@@ -46,8 +41,6 @@ header.topbar{
   border:1px solid #ffffff38;color:#fff;display:inline-flex;align-items:center}
 .topbar .btn:active{transform:translateY(1px)}
 .build{opacity:.8}
-
-/* フェード＆ヒント */
 .rail-fade{position:absolute;top:0;bottom:0;width:28px;pointer-events:none;opacity:0;transition:opacity .2s}
 .rail-fade.left{left:0;background:linear-gradient(to right,rgba(0,0,0,.35),rgba(0,0,0,0))}
 .rail-fade.right{right:0;background:linear-gradient(to left,rgba(0,0,0,.35),rgba(0,0,0,0))}
@@ -60,8 +53,6 @@ header.topbar{
 }
 .rail-hint.show{opacity:1;animation:railPulse 1.6s ease-in-out 2}
 @keyframes railPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}}
-
-/* ===== Layout ===== */
 #wrap{position:relative;height:100%;padding-top:var(--topbar-h)}
 #stage{position:absolute;inset:0;padding-left:var(--toolbar-w);padding-right:0}
 .toolbar-right #stage{padding-left:0;padding-right:var(--toolbar-w)}
@@ -70,8 +61,6 @@ header.topbar{
 .toolbar-right #paper,.toolbar-right #guide,.toolbar-right #paint{left:0;right:var(--toolbar-w)}
 #paper,#guide{z-index:100;pointer-events:none}
 #paint{z-index:120;touch-action:none;-webkit-touch-callout:none}
-
-/* ===== Sidebar / Tools ===== */
 .sidebar{
   position:fixed;z-index:1500;left:0;top:var(--topbar-h);bottom:0;width:var(--toolbar-w);
   display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,.86);
@@ -85,12 +74,8 @@ header.topbar{
 .tool:hover{outline:1px solid rgba(79,124,255,.5)}
 .tool.active{outline:1px solid var(--ok)}
 .tool svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
-/* 折り畳み時：全幅化＆サイドバー非表示 */
 body.tb-collapsed{ --toolbar-w:0px }
 body.tb-collapsed .sidebar{ display:none }
-
-/* 折り畳み時のみ “三角ハンドル” */
 .tb-handle{
   position:fixed;z-index:1600;top:calc(var(--topbar-h) + 8px);left:8px;
   width:36px;height:36px;border-radius:10px;display:none;place-items:center;
@@ -99,8 +84,6 @@ body.tb-collapsed .sidebar{ display:none }
 }
 body.tb-collapsed .tb-handle{ display:grid }
 .tb-handle svg{width:18px;height:18px;stroke:#e6f1ff;fill:none;stroke-width:2}
-
-/* ===== Panel / Text ===== */
 .panel{position:absolute;z-index:1400;left:70px;top:calc(var(--topbar-h) + 10px);
   min-width:280px;max-width:320px;padding:8px 12px 10px;border-radius:14px;color:var(--ink);
   background:var(--panel);border:1px solid #ffffff24;box-shadow:var(--shadow);
@@ -110,7 +93,6 @@ body.tb-collapsed .tb-handle{ display:grid }
   margin:-8px -12px 8px;background:var(--panel);border-bottom:1px solid #ffffff20;border-radius:14px 14px 0 0;cursor:grab;touch-action:none}
 #panelTool{flex:1;font-weight:600;font-size:14px;text-align:left}
 .panel .close{margin-left:auto;height:26px;padding:0 10px;border-radius:8px;border:1px solid #ffffff2e;background:#ffffff14;color:#fff;font-size:14px}
-
 .text-layer{position:absolute;left:var(--toolbar-w);top:0;right:0;bottom:0;z-index:130;pointer-events:none}
 .toolbar-right .text-layer{left:0;right:var(--toolbar-w)}
 .note-text{position:absolute;min-width:64px;min-height:28px;padding:6px 8px;color:#111;background:transparent;
@@ -119,11 +101,9 @@ body.tb-collapsed .tb-handle{ display:grid }
 .note-text:focus-within .note-inner{outline:2px solid var(--ok); background:#ffffffa0}
 .note-text .del{position:absolute;right:-8px;top:-10px;font-size:11px;color:#fff;background:#0008;border:1px solid #fff3;border-radius:8px;padding:2px 6px;display:none}
 .note-text:focus-within .del{display:block}
-
 @media print{header.topbar,.sidebar,.panel{display:none!important}#stage{padding-left:0!important;padding-right:0!important}body,html,#wrap{height:auto}}
-
-.page-nav{display:none}
-#pageIndicator{display:none}
+.page-nav{display:inline-flex;gap:6px;align-items:center}
+#pageIndicator{min-width:48px;text-align:center}
 #morePanel{position:fixed;right:10px;top:calc(var(--topbar-h) + 6px);z-index:3000;display:none;
   background:var(--panel);border:1px solid #ffffff24;border-radius:12px;box-shadow:var(--shadow);padding:8px}
 #morePanel .btn{margin:4px 0;display:block;width:100%}
@@ -131,45 +111,42 @@ body.tb-collapsed .tb-handle{ display:grid }
 </head>
 <body>
 <header class="topbar" id="topbar">
-  <div class="brand"><strong id="verText">NOTE LINK — V0.8.0 / B-REL6-S (1PAGE RS4)</strong></div>
-
+  <div class="brand"><strong id="verText">NOTE LINK — v0.8.S</strong></div>
   <div class="rail-wrap" id="railWrap">
     <div class="rail-scroll" id="railScroll">
       <button class="btn" id="btnSetBgTop">背景</button>
       <button class="btn" id="btnLoad">読み込み</button>
       <button class="btn" id="btnSave">保存</button>
-
       <button class="btn" id="btnZoomOut">−</button>
       <button class="btn" id="btnZoomReset">100%</button>
       <button class="btn" id="btnZoomIn">＋</button>
-
       <button class="btn" id="btnUndo">UNDO</button>
       <button class="btn" id="btnRedo">REDO</button>
       <button class="btn" id="btnPrint">印刷</button>
       <button class="btn" id="btnPng">PNG</button>
       <button class="btn" id="btnShare">共有</button>
-
-      <span class="build" id="buildText">BUILD: HF6S-1P-RS4</span>
+      <span class="page-nav">
+        <button class="btn" id="btnPrev">◀︎ 前</button>
+        <span id="pageIndicator">1/1</span>
+        <button class="btn" id="btnNext">次 ▶︎</button>
+      </span>
+      <span class="build" id="buildText">BUILD: HF6S-RS5</span>
     </div>
     <div id="railHint" class="rail-hint" aria-hidden="true">⇠ スライド ⇢</div>
     <div class="rail-fade left"  aria-hidden="true"></div>
     <div class="rail-fade right" aria-hidden="true"></div>
   </div>
-
   <div class="right-fixed">
     <button class="btn" id="btnMore">⋯</button>
   </div>
 </header>
-
-<!-- 折り畳み時のみ出る “三角ハンドル”（閉=▼ / 開=▲） -->
 <button id="tbHandle" class="tb-handle" aria-expanded="false" title="ツールバー 開く/閉じる">
   <svg viewBox="0 0 24 24"><path d="M5 9 L12 16 L19 9 Z"/></svg>
 </button>
-
 <div id="morePanel">
+  <button class="btn" id="btnAddPage_m">＋ページ</button>
   <button class="btn" id="btnSetBg_m">画像を背景に設定</button>
 </div>
-
 <aside class="sidebar" id="sidebar">
   <div class="rail">
     <button class="tool" id="btnSidebarToggle" data-tool="toggle" title="ツールバーの開閉">
@@ -195,7 +172,6 @@ body.tb-collapsed .tb-handle{ display:grid }
     </button>
   </div>
 </aside>
-
 <div class="panel" id="panel">
   <div class="handle" id="panelHandle">
     <div id="panelTool">-</div>
@@ -231,7 +207,6 @@ body.tb-collapsed .tb-handle{ display:grid }
     <button id="btnTextBoxDel">枠削</button>
   </div>
 </div>
-
 <div id="wrap"><div id="stage">
   <div id="viewport">
     <canvas id="paper"></canvas>
@@ -240,9 +215,7 @@ body.tb-collapsed .tb-handle{ display:grid }
     <div class="text-layer" id="textLayer"></div>
   </div>
 </div></div>
-
 <script>
-/* ===== util & nodes ===== */
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const DPR=Math.max(1, self.devicePixelRatio||1);
 const topbar=$('#topbar'), panel=$('#panel'), viewport=$('#viewport');
@@ -250,10 +223,8 @@ const cvPaper=$('#paper'), gPaper=cvPaper.getContext('2d');
 const cvGuide=$('#guide'), gGuide=cvGuide.getContext('2d');
 const cv=$('#paint'), ctx=cv.getContext('2d',{alpha:true});
 const textLayer=$('#textLayer');
-$('#verText').textContent='NOTE LINK — V0.8.0 / B-REL6-S (1PAGE RS4)';
-$('#buildText').textContent='BUILD: HF6S-1P-RS4';
-
-/* ===== layout & zoom ===== */
+$('#verText').textContent='NOTE LINK — v0.8.S';
+$('#buildText').textContent='BUILD: HF6S-RS5';
 let zoom=1, panX=0, panY=0, W=0, H=0;
 function applyBars(){ const h=Math.round(topbar.getBoundingClientRect().height)||44; document.documentElement.style.setProperty('--topbar-h',h+'px'); }
 function updateViewportTransform(){ const tx=panX/zoom, ty=panY/zoom; viewport.style.transform=`scale(${zoom}) translate(${tx}px,${ty}px)`; }
@@ -268,31 +239,18 @@ addEventListener('resize',()=>{applyBars(); fitCanvases(); clampHandle(); update
 if (window.visualViewport){ visualViewport.addEventListener('resize', ()=>{ applyBars(); fitCanvases(); clampHandle(); updateRailDiscoverability(); }); }
 addEventListener('orientationchange', ()=>{ applyBars(); fitCanvases(); clampHandle(); updateRailDiscoverability(); });
 applyBars();
-
-/* ===== paper & grid ===== */
 function mm2px(mm){return mm*96/25.4*DPR}
 const A4={wmm:210,hmm:297}; let paperRect={x:0,y:0,w:0,h:0};
 function layoutPaper(){
   const a4w=mm2px(A4.wmm), a4h=mm2px(A4.hmm);
   const vw=cv.width, vh=cv.height;
-  const margin=24*DPR; // 物理端の微小余白（影や上下の見切れ防止）
-
+  const margin=isTouchDevice()?0:(24*DPR);
   const sW=(vw - 2*margin)/a4w;
   const sH=(vh - 2*margin)/a4h;
-
   let scale;
-  if(isTouchDevice()){
-    // 横幅基準でフィット。ただし高さがはみ出る場合は高さ側でクランプ。
-    scale = sW;
-    if(a4h*scale > vh - 2*margin) scale = Math.min(sW, sH);
-  }else{
-    // Desktop: 実寸(=1)で入るなら1。入らなければ横幅基準（高さでクランプ）
-    if(sW>=1 && sH>=1) scale = 1;
-    else scale = Math.min(sW, sH);
-  }
-  // 最小/最大の安全ガード
+  if(isTouchDevice()){ scale = sW; if(a4h*scale > vh - 2*margin) scale = Math.min(sW, sH); }
+  else{ if(sW>=1 && sH>=1) scale = 1; else scale = Math.min(sW, sH); }
   scale = Math.max(0.3, Math.min(3, scale));
-
   const w=a4w*scale, h=a4h*scale;
   paperRect={w,h,x:(cv.width-w)/2,y:(cv.height-h)/2};
 }
@@ -308,25 +266,29 @@ function drawPaper(){
     g.stroke(); g.restore();
   }
 }
-
-/* ===== single page model ===== */
-const Pages={ list:[{strokes:[],textsHTML:'',bg:null}], idx:0, cur(){ return this.list[0]; } };
-
-/* ===== more panel ===== */
+const Pages={ list:[{strokes:[],textsHTML:'',bg:null}], idx:0, cur(){ return this.list[this.idx]; } };
+function updatePageIndicator(){ $('#pageIndicator').textContent=(Pages.idx+1)+'/'+Pages.list.length; }
+function setPage(i){
+  Pages.cur().textsHTML = textLayer.innerHTML || '';
+  Pages.idx = Math.max(0, Math.min(Pages.list.length-1, i));
+  textLayer.innerHTML = Pages.cur().textsHTML || '';
+  rehydrateTextLayer();
+  drawPaper(); redrawAll(); updatePageIndicator(); pushHistory();
+}
+$('#btnPrev').onclick=()=>setPage(Pages.idx-1);
+$('#btnNext').onclick=()=>setPage(Pages.idx+1);
 const morePanel=$('#morePanel'); const btnMore=$('#btnMore');
 function toggleMore(on){ morePanel.style.display=on?'block':'none'; }
 btnMore.onclick=()=>toggleMore(morePanel.style.display!=='block');
 addEventListener('click',e=>{ if(!morePanel.contains(e.target) && e.target!==btnMore) toggleMore(false); });
+$('#btnAddPage_m').onclick=()=>{ const pos=Pages.idx+1; Pages.list.splice(pos,0,{strokes:[],textsHTML:'',bg:null}); setPage(pos); toggleMore(false); };
 $('#btnSetBg_m').onclick=async()=>{ await setBackgroundFromPicker(); toggleMore(false); };
-
-/* ===== tools & panel ===== */
 let tool='pen';
 const perTool={ pen:{color:'#000000',size:4,alpha:1,cap:'round',straight:false},
   marker:{color:'#ffff00',size:16,alpha:.5,cap:'butt',straight:false},
   eraser:{size:24}, hand:{}, keyboard:{} };
 let color=perTool.pen.color, size=perTool.pen.size, alpha=1, cap='round';
 let straightToggle=false, straightKey=false;
-
 function saveToolState(k){const p=perTool[k]||(perTool[k]={}); p.color=color;p.size=size;p.alpha=alpha;p.cap=cap;p.straight=!!straightToggle;}
 function loadToolState(k){const p=perTool[k]||{};color=p.color??color;size=p.size??size;alpha=p.alpha??alpha;cap=p.cap??cap;straightToggle=!!p.straight;}
 function setActiveTool(t){
@@ -356,8 +318,6 @@ $$('.tool').forEach(btn=>{
   });
 });
 $('#btnSidebarToggle').onclick=()=>toggleToolbar('auto');
-
-/* パネル移動 */
 (()=>{const handle=$('#panelHandle');let dragging=false,sx=0,sy=0,ox=0,oy=0,id=0;
 function down(e){ if(e.target.closest('#panelClose')) return; dragging=true; id=e.pointerId||1; try{panel.setPointerCapture(id)}catch{}; sx=e.clientX; sy=e.clientY; const r=panel.getBoundingClientRect(); ox=r.left; oy=r.top; e.preventDefault();}
 function move(e){ if(!dragging) return; const nx=ox+(e.clientX-sx),ny=oy+(e.clientY-sy); panel.style.left=Math.max(56,nx)+'px'; const top=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'))+6; panel.style.top=Math.max(top,ny)+'px';}
@@ -373,8 +333,6 @@ function pxToMm(px){return px*25.4/96}
 function syncUI(){ui.color.value=color;ui.size.value=size;ui.sizeVal.textContent=`${size}px (${pxToMm(size).toFixed(2)} mm)`;ui.alpha.value=Math.round((tool==='marker'?alpha:0.5)*100);ui.alphaVal.textContent=Math.round((tool==='marker'?alpha:0.5)*100)+'%';ui.cap.value=cap;ui.straight.checked=straightToggle;ui.gOn.checked=gridOn;ui.gStep.value=String(gridStepMM);ui.gColor.value=gridColor;ui.palm.checked=true;ui.pressure.checked=true;ui.tilt.checked=true;}
 function onPanelChange(){color=ui.color.value;size=+ui.size.value;alpha=(tool==='marker')?(+ui.alpha.value/100):alpha;ui.sizeVal.textContent=`${size}px (${pxToMm(size).toFixed(2)} mm)`;ui.alphaVal.textContent=Math.round(alpha*100)+'%';cap=ui.cap.value;straightToggle=ui.straight.checked;gridOn=ui.gOn.checked;gridStepMM=+ui.gStep.value;gridColor=ui.gColor.value;drawPaper();redrawAll();}
 Object.values(ui).forEach(el=>el.addEventListener('input',onPanelChange));
-
-/* ===== pointer mapping & draw ===== */
 function pointerToCanvas(e){ const r=cv.getBoundingClientRect(); return { x:(e.clientX - r.left)*(cv.width/r.width), y:(e.clientY - r.top)*(cv.height/r.height) }; }
 function inPaperXY(x,y){ return x>=paperRect.x && y>=paperRect.y && x<=paperRect.x+paperRect.w && y<=paperRect.y+paperRect.h; }
 let drawing=false, panning=false, start={x:0,y:0}, last={x:0,y:0}, activeTouches=0; let currentStroke=null;
@@ -390,7 +348,6 @@ function showGuide(sx,sy,ex,ey){ gGuide.clearRect(0,0,cvGuide.width,cvGuide.heig
 function clearGuide(){ gGuide.clearRect(0,0,cvGuide.width,cvGuide.height); }
 function toUV(x,y){ return {u:(x-paperRect.x)/paperRect.w, v:(y-paperRect.y)/paperRect.h}; }
 function fromUV(u,v){ return {x:paperRect.x + u*paperRect.w, y:paperRect.y + v*paperRect.h}; }
-
 function onDown(e){
   if(e.pointerType==='touch') activeTouches++;
   if(tool==='hand'){ panning=true; cv.style.cursor='grabbing'; return; }
@@ -431,7 +388,6 @@ cv.addEventListener('pointerup',onUp,{passive:false});
 cv.addEventListener('pointercancel',onUp,{passive:false});
 addEventListener('keydown',e=>{ if(e.key==='Shift') straightKey=true; });
 addEventListener('keyup',e=>{ if(e.key==='Shift') straightKey=false; });
-
 function redrawAll(){
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.save(); ctx.beginPath(); ctx.rect(paperRect.x,paperRect.y,paperRect.w,paperRect.h); ctx.clip();
@@ -447,8 +403,17 @@ function redrawAll(){
   }
   ctx.restore();
 }
-
-/* ===== TEXT (Keyboard tool) ===== */
+function setZoom(z){
+  const z0=zoom, z1=Math.max(0.6,Math.min(3,z));
+  const vrW=viewport.clientWidth, vrH=viewport.clientHeight; const Cx=vrW/2, Cy=vrH/2;
+  const Ux=(Cx - panX)/z0, Uy=(Cy - panY)/z0;
+  zoom=z1; panX = Cx - Ux*z1; panY = Cy - Uy*z1;
+  updateViewportTransform();
+  $('#btnZoomReset').textContent=Math.round(zoom*100)+'%';
+}
+$('#btnZoomIn').onclick = ()=>setZoom(zoom+0.1);
+$('#btnZoomOut').onclick= ()=>setZoom(zoom-0.1);
+$('#btnZoomReset').onclick=()=>setZoom(1);
 let activeText=null;
 function setActiveText(el){ if(activeText && activeText!==el) activeText.classList.remove('focus'); activeText=el; }
 function layerPointFromClient(e){
@@ -465,24 +430,19 @@ function createTextBox(x,y,txt=''){
   wrap.className='note-text';
   wrap.style.left=Math.max(paperRect.x/DPR, x-40)+'px';
   wrap.style.top =Math.max(paperRect.y/DPR, y-14)+'px';
-
   const inner=document.createElement('div');
   inner.className='note-inner';
   inner.contentEditable='true';
   inner.textContent = txt||'';
-
   const del=document.createElement('button');
   del.textContent='削除'; del.className='del';
   del.setAttribute('contenteditable','false'); del.tabIndex=-1;
-
   wrap.append(inner, del);
   textLayer.appendChild(wrap);
-
   del.addEventListener('click',(ev)=>{ ev.stopPropagation(); wrap.remove(); pushHistoryDebounced(); });
   wrap.addEventListener('pointerdown',(ev)=>{ ev.stopPropagation(); setActiveText(wrap); inner.focus(); });
   inner.addEventListener('input', ()=>pushHistoryDebounced());
   inner.addEventListener('blur', ()=>pushHistoryDebounced());
-
   setActiveText(wrap);
   inner.focus(); placeCaretAtEnd(inner);
   return wrap;
@@ -528,7 +488,6 @@ function rehydrateTextLayer(){
   textLayer.querySelectorAll('.note-text').forEach(box=>{
     if(box._rehydrated) return;
     box._rehydrated=true;
-
     let inner = box.querySelector('.note-inner');
     if(!inner){
       inner = document.createElement('div');
@@ -550,11 +509,7 @@ function rehydrateTextLayer(){
     inner.addEventListener('blur', ()=>pushHistoryDebounced());
   });
 }
-
-/* ===== STATE SYNC ===== */
 function flushText(){ Pages.cur().textsHTML = textLayer.innerHTML || ''; }
-
-/* ===== output/save/load ===== */
 function composite(){ const out=document.createElement('canvas'); out.width=cv.width; out.height=cv.height; const o=out.getContext('2d');
   o.drawImage(cvPaper,0,0); o.drawImage(cv,0,0);
   const L=textLayer.getBoundingClientRect();
@@ -571,16 +526,15 @@ function composite(){ const out=document.createElement('canvas'); out.width=cv.w
 $('#btnPng').onclick=()=>composite().toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='note-link.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),800)});
 $('#btnPrint').onclick=()=>window.print();
 $('#btnShare').onclick=()=>{composite().toBlob(async b=>{const f=new File([b],'note.png',{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Note Link'})}catch(e){}}else{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;const ts=Date.now();a.download='note-link-'+ts+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),800)}})};
-
 let fileHandle=null;
-function exportJSON(){ flushText(); return JSON.stringify({ v:'HF6s-1p-rs4',
+function exportJSON(){ flushText(); return JSON.stringify({ v:'HF6s-rs5',
   pages: Pages.list.map(pg=>({strokes:pg.strokes||[],textsHTML:pg.textsHTML||'', bg:pg.bg && pg.bg.dataURL ? {dataURL:pg.bg.dataURL}:null})),
-  idx: 0, grid:{on:gridOn,stepMM:gridStepMM,color:gridColor}, side: document.body.classList.contains('toolbar-right')?'right':'left' }); }
+  idx: Pages.idx, grid:{on:gridOn,stepMM:gridStepMM,color:gridColor}, side: document.body.classList.contains('toolbar-right')?'right':'left' }); }
 async function doSave(){ try{
     const blob=new Blob([exportJSON()],{type:'application/json'});
-    if('showSaveFilePicker' in window){ if(!fileHandle){ fileHandle=await window.showSaveFilePicker({suggestedName:'note-link-1page-rs4.json',types:[{description:'Note Link JSON',accept:{'application/json':['.json']}}]}); }
+    if('showSaveFilePicker' in window){ if(!fileHandle){ fileHandle=await window.showSaveFilePicker({suggestedName:'note-link-rs5.json',types:[{description:'Note Link JSON',accept:{'application/json':['.json']}}]}); }
       const w=await fileHandle.createWritable(); await w.write(blob); await w.close();
-    }else{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='note-link-1page-rs4.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),800); }
+    }else{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='note-link-rs5.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),800); }
   }catch(e){} }
 async function doLoad(){ try{
     let f=null;
@@ -589,15 +543,14 @@ async function doLoad(){ try{
       f=await new Promise(res=>{ inp.onchange=()=>res(inp.files[0]); inp.click(); });
     }
     const txt=await f.text(); const data=JSON.parse(txt);
-    Pages.list=[(data.pages&&data.pages[0])?data.pages[0]:{strokes:[],textsHTML:'',bg:null}];
-    const pg=Pages.cur(); if(pg.bg && pg.bg.dataURL){ const img=new Image(); img.src=pg.bg.dataURL; pg.bg={dataURL:pg.bg.dataURL,img}; }
+    Pages.list=(data.pages||[]).map(pg=>{ const entry={strokes:pg.strokes||[],textsHTML:pg.textsHTML||'',bg:null}; if(pg.bg && pg.bg.dataURL){ const img=new Image(); img.src=pg.bg.dataURL; entry.bg={dataURL:pg.bg.dataURL,img}; } return entry; });
+    if(!Pages.list.length) Pages.list=[{strokes:[],textsHTML:'',bg:null}];
+    Pages.idx=Math.max(0,Math.min(Pages.list.length-1,data.idx||0));
     gridOn=!!data.grid?.on; gridStepMM=data.grid?.stepMM||10; gridColor=data.grid?.color||'#b7bfd6';
     if(data.side==='right'){ document.body.classList.add('toolbar-right'); } else { document.body.classList.remove('toolbar-right'); }
-    textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); drawPaper(); redrawAll(); pushHistory();
+    textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); updatePageIndicator(); drawPaper(); redrawAll(); pushHistory();
   }catch(e){} }
 $('#btnSave').onclick=doSave; $('#btnLoad').onclick=doLoad;
-
-/* ===== image: set background only ===== */
 async function pickImage(){
   try{
     if('showOpenFilePicker' in window){
@@ -626,22 +579,19 @@ async function setBackgroundFromPicker(){
 }
 document.getElementById('btnSetBgTop').onclick=()=>setBackgroundFromPicker();
 document.getElementById('btnSetBg_m').onclick=()=>setBackgroundFromPicker();
-
-/* ===== undo/redo ===== */
 const hist=[], redoStack=[];
-function snapshot(){ flushText(); return {pages:JSON.parse(JSON.stringify(Pages.list.map(p=>({strokes:p.strokes,textsHTML:p.textsHTML,bg:p.bg?{dataURL:p.bg.dataURL}:null})))), idx:0, grid:{on:gridOn,step:gridStepMM,color:gridColor}, side: document.body.classList.contains('toolbar-right')?'right':'left'}; }
+function snapshot(){ flushText(); return {pages:JSON.parse(JSON.stringify(Pages.list.map(p=>({strokes:p.strokes,textsHTML:p.textsHTML,bg:p.bg?{dataURL:p.bg.dataURL}:null})))), idx:Pages.idx, grid:{on:gridOn,step:gridStepMM,color:gridColor}, side: document.body.classList.contains('toolbar-right')?'right':'left'}; }
 function pushHistory(){ hist.push(snapshot()); if(hist.length>40) hist.shift(); redoStack.length=0; }
 let pushTimer=0;
 function pushHistoryDebounced(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushHistory, 250); }
 function restoreSnap(s){
   Pages.list=s.pages.map(pg=>{ const entry={strokes:pg.strokes||[],textsHTML:pg.textsHTML||'',bg:null}; if(pg.bg&&pg.dataURL){ const img=new Image(); img.src=pg.dataURL; entry.bg={dataURL:pg.dataURL,img}; } return entry; });
+  Pages.idx=Math.max(0,Math.min(Pages.list.length-1,s.idx||0));
   if(s.side==='right'){ document.body.classList.add('toolbar-right'); } else { document.body.classList.remove('toolbar-right'); }
-  textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); drawPaper(); redrawAll();
+  textLayer.innerHTML=Pages.cur().textsHTML||''; rehydrateTextLayer(); updatePageIndicator(); drawPaper(); redrawAll();
 }
 $('#btnUndo').onclick=()=>{ if(!hist.length) return; const cur=snapshot(); const prev=hist.pop(); redoStack.push(cur); restoreSnap(prev); };
 $('#btnRedo').onclick=()=>{ const nxt=redoStack.pop(); if(!nxt) return; hist.push(snapshot()); restoreSnap(nxt); };
-
-/* ===== Header rail scroll + discoverability (fade/hint) ===== */
 const rail = document.getElementById('railScroll');
 const railWrap = document.getElementById('railWrap');
 const railHint = document.getElementById('railHint');
@@ -665,7 +615,6 @@ function railEnd(e){ if(!railDown) return;
 rail.addEventListener('pointerup',railEnd,{passive:false});
 rail.addEventListener('pointercancel',railEnd,{passive:false});
 rail.addEventListener('pointerleave',railEnd,{passive:true});
-
 function updateRailDiscoverability(){
   const can = rail.scrollWidth > rail.clientWidth + 1;
   railWrap.classList.toggle('can-overflow', can);
@@ -693,8 +642,6 @@ function hintDismiss(){
 rail.addEventListener('scroll',()=>{ updateRailDiscoverability(); },{passive:true});
 rail.addEventListener('wheel',()=>{ hintDismiss(); },{passive:true});
 rail.addEventListener('pointerdown',()=>{ hintDismiss(); },{passive:true});
-
-/* ===== Collapsible toolbar: nearest-edge docking; handle persists ===== */
 const bodyEl=document.body, tbHandle=document.getElementById('tbHandle');
 function updateHandleIcon(){ const open=!isCollapsed(); tbHandle.innerHTML=open
   ? '<svg viewBox="0 0 24 24"><path d="M5 15 L12 8 L19 15 Z"/></svg>'
@@ -704,23 +651,20 @@ function applyHandleX(px){ const x=Math.max(4, Math.min(Math.max(4,innerWidth-40
 function saveHandleX(px){ try{ localStorage.setItem('tbHandleX', String(px)); sessionStorage.setItem('tbHandleX', String(px)); }catch{} }
 function loadHandleX(){ try{ const s=sessionStorage.getItem('tbHandleX'); if(s!=null) return parseInt(s,10)||8; const v=localStorage.getItem('tbHandleX'); return (v==null?8:parseInt(v,10)||8);}catch{return 8;} }
 function getPaperLeftCSS(){ const r=cv.getBoundingClientRect(); return r.left + (paperRect.x / DPR); }
-
 let draggingHandle=false, handleMoved=false, hx=0, startX=0, saveTick=0, justDragged=false;
 let handleXCurrent = loadHandleX();
-
 function decideSideByHandle(){ return handleXCurrent > innerWidth/2 ? 'right':'left'; }
 function setToolbarSide(side){
   if(side==='right'){ bodyEl.classList.add('toolbar-right'); }
   else{ bodyEl.classList.remove('toolbar-right'); }
 }
-
 function toggleToolbar(mode='auto'){
   const preAnchor = getPaperLeftCSS();
   const willCollapse=(mode==='auto')?!isCollapsed():(mode==='collapse');
   if(willCollapse){
     bodyEl.classList.add('tb-collapsed'); tbHandle.setAttribute('aria-expanded','false');
   }else{
-    setToolbarSide(decideSideByHandle()); // dock to nearest edge by handle
+    setToolbarSide(decideSideByHandle());
     bodyEl.classList.remove('tb-collapsed'); tbHandle.setAttribute('aria-expanded','true');
   }
   applyBars(); fitCanvases();
@@ -731,7 +675,6 @@ function toggleToolbar(mode='auto'){
   applyHandleX(handleXCurrent);
   updateRailDiscoverability(); hintMaybe();
 }
-
 tbHandle.addEventListener('click', e=>{
   if(justDragged){ justDragged=false; return; }
   toggleToolbar('auto');
@@ -761,8 +704,6 @@ function endHandle(e){
 tbHandle.addEventListener('pointerup', endHandle, {passive:false});
 tbHandle.addEventListener('pointercancel', endHandle, {passive:false});
 function clampHandle(){ const x=parseInt(tbHandle.style.left||handleXCurrent,10)||8; applyHandleX(x); }
-
-/* ===== boot ===== */
 function boot(){
   setToolbarSide(decideSideByHandle());
   updateViewportTransform(); fitCanvases(); setActiveTool('pen');
@@ -770,6 +711,7 @@ function boot(){
   panel.classList.remove('show'); $$('.tool[data-tool="settings"]').forEach(b=>b.classList.remove('active'));
   rehydrateTextLayer();
   updateRailDiscoverability(); hintMaybe();
+  updatePageIndicator();
   pushHistory();
 }
 boot();
